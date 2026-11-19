@@ -1,0 +1,124 @@
+/* concert hall at night: ink stage, one pink lightstick accent. Single dark look on purpose. */
+:root{--bg:#13111c;--panel:#181524;--surface:#1f1b2c;--line:#332e47;--fg:#f2eff9;--muted:#9c95b5;--accent:#ff5fa8;--on-accent:#24081a;--perfect:#6fe3ff;--good:#ffd66b;--miss:#ff6b81;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);accent-color:var(--accent);font:15px/1.5 -apple-system,BlinkMacSystemFont,"PingFang TC","Apple SD Gothic Neo","Noto Sans TC","Noto Sans KR",sans-serif;padding:max(12px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) 48px max(20px,env(safe-area-inset-left))}
+main,section{max-width:720px;margin:0 auto;display:grid;gap:12px;width:100%}
+h1{font-size:17px;margin:0;letter-spacing:.02em}
+select,input,textarea,button{font:inherit;color:inherit}
+select,input,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+textarea{width:100%;min-height:90px;resize:vertical}
+select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:34px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%239c95b5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center/14px}
+/* Browsers that support it also get a styled option list; others keep their own menu (the iPhone picker wheel, the macOS menu). */
+@supports (appearance:base-select){
+  select,::picker(select){appearance:base-select}
+  select::picker-icon{display:none}
+  ::picker(select){background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:4px;margin-block:4px;box-shadow:0 12px 32px rgb(0 0 0 / .45)}
+  option{padding:10px 12px;border-radius:6px}
+  option:hover,option:focus-visible{background:var(--line)}
+  option:checked{color:var(--accent);font-weight:600}
+  option::checkmark{display:none}
+}
+dialog{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:14px;padding:0;width:min(360px,calc(100% - 32px));box-shadow:0 20px 50px rgb(0 0 0 / .5)}
+dialog[open]{animation:dlgIn .15s ease-out}
+@keyframes dlgIn{from{opacity:0;transform:translateY(8px)}}
+dialog::backdrop{background:rgb(8 6 14 / .65);backdrop-filter:blur(3px)}
+.dlg{padding:20px;display:grid;gap:8px}
+dialog h2{margin:0;font-size:17px}
+dialog p{margin:0 0 12px;color:var(--muted);line-height:1.6}
+dialog .row{justify-content:flex-end}
+.danger-fill{background:var(--miss);border-color:var(--miss);color:var(--on-accent);font-weight:600}
+button{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button:active{transform:scale(.97)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.danger{color:var(--miss)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+#songTitle{flex:1 1 160px;margin:0;font-size:20px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.muted{color:var(--muted);font-size:13px;margin:0}
+.muted:empty{display:none}
+
+/* layout: song list docked to the screen's left edge with a pull tab on its border.
+   Wide screens push the page over; phones slide it over the page. */
+:root{--sw:264px}
+header{max-width:720px;margin:0 auto 12px}
+#side{position:fixed;inset:0 auto 0 0;z-index:30;width:var(--sw);display:grid;gap:12px;align-content:start;overflow:auto;overscroll-behavior:contain;padding:max(12px,env(safe-area-inset-top)) 12px 24px max(12px,env(safe-area-inset-left));background:var(--panel);border-right:1px solid var(--line);transform:translateX(-100%);visibility:hidden}
+.open #side{transform:none;visibility:visible}
+/* menu button pinned to the screen's top-left corner; it stays put whether the list is open or closed */
+#menuBtn{position:fixed;z-index:31;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));width:40px;height:40px;padding:0;display:grid;place-items:center;background:none;border-color:transparent;color:var(--muted)}
+#menuBtn:hover{background:var(--surface);color:var(--fg)}
+.open #menuBtn{color:var(--accent)}
+.side-head{min-height:40px;display:flex;align-items:center;padding-left:48px;font-weight:700}
+#scrim{position:fixed;inset:0;z-index:29;background:rgb(8 6 14 / .6);opacity:0;pointer-events:none}
+.anim,.anim #side,.anim #scrim{transition:padding-left .25s ease,transform .25s ease,visibility .25s,opacity .25s}
+@media (min-width:840px){body.open:not(.io){padding-left:calc(var(--sw) + 32px)}}
+@media (max-width:839px){
+  body:not(.io) header{padding-left:40px} /* clear the menu button */
+  :root{--sw:min(288px,85vw)}
+  .open #scrim{opacity:1;pointer-events:auto}
+  .open #side{box-shadow:12px 0 40px rgb(0 0 0 / .5)}
+}
+@media (max-width:479px){.wide{display:none}}
+.io #side,.io #menuBtn,.io #scrim,.io main>:not(#io){display:none!important}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:8px}
+.card h2{margin:0;font-size:16px}
+.link{background:none;border:0;padding:4px 10px;justify-self:start;color:var(--muted);font-size:13px;text-decoration:underline}
+#lists button{flex:1 1 auto;padding-inline:6px;white-space:nowrap}
+.songs{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.songs li{display:flex;align-items:center;border-radius:8px}
+.songs li:hover{background:rgb(255 255 255 / .04)}
+.songs li.cur{background:var(--surface)}
+.songs li.cur .pick{color:var(--accent);font-weight:600}
+.songs li.drag{background:var(--line);opacity:.9}
+.songs button{background:none;border:0;padding:9px 8px}
+.songs .pick{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.songs .grip,.songs [data-a=rm]{color:var(--muted);padding-inline:6px}
+.songs .grip{cursor:grab;touch-action:none}
+/* mouse users see the handle and ✕ only on the hovered row; touch screens always show them */
+@media (hover:hover){.songs li:not(:hover,.drag) :is(.grip,[data-a=rm]):not(:focus-visible){opacity:0}}
+.seg{display:flex}
+.seg button{border-radius:0}
+.seg button:first-child{border-radius:8px 0 0 8px}
+.seg button:last-child{border-radius:0 8px 8px 0}
+.video{aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;width:min(100%,71vh);margin-inline:auto}
+.video>*{width:100%;height:100%;display:block;border:0}
+.msg{color:var(--miss);font-size:13px;margin:0}
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+summary{cursor:pointer;color:var(--muted)}
+details[open] summary{margin-bottom:10px}
+details>div{display:grid;gap:8px}
+.hit{animation:hitflash .3s}
+@keyframes hitflash{from{background:var(--accent);color:var(--on-accent)}}
+
+/* practice */
+.pad{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;height:180px;overflow:hidden;-webkit-user-select:none;user-select:none}
+.lane{position:absolute;inset:0 0 auto 0;height:120px;border-bottom:1px solid var(--line)}
+.hitline{position:absolute;top:8px;bottom:8px;left:15%;width:3px;margin-left:-1.5px;background:var(--accent);border-radius:2px;box-shadow:0 0 12px var(--accent)}
+.note{position:absolute;left:0;top:0;padding:4px 10px;border-radius:999px;background:var(--fg);color:var(--bg);font-weight:700;white-space:nowrap;will-change:transform}
+.note.perfect{background:var(--perfect)}
+.note.good{background:var(--good)}
+.note.miss,.note.wrong{background:transparent;color:var(--miss);box-shadow:inset 0 0 0 1px var(--miss)}
+.judge{position:absolute;left:0;right:0;top:124px;text-align:center;font-weight:800;font-size:20px;line-height:1.25;letter-spacing:.06em;pointer-events:none}
+.judge small{display:block;font-size:16px;font-weight:600;color:var(--fg);letter-spacing:0}
+.judge.pop{animation:pop .6s ease-out forwards}
+@keyframes pop{from{transform:scale(1.2)}to{transform:scale(1);opacity:0}}
+.pbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.pbtns button{min-height:56px;font-size:17px;font-weight:700;padding:8px 6px}
+.pbtns:empty{display:none}
+.stats{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;text-align:right}
+.result{background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:14px;display:grid;gap:4px}
+.result b{font-size:28px;font-variant-numeric:tabular-nums}
+
+/* make */
+.names{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.names button,.words button{padding:12px 8px;font-size:16px;font-weight:600}
+.words{display:flex;flex-wrap:wrap;gap:8px}
+.words:empty{display:none}
+.cues{position:relative;list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:50vh;overflow:auto}
+.cues li{display:flex;gap:6px;align-items:center}
+.cues li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cues button{padding:4px 10px}
+.cues .t{font-variant-numeric:tabular-nums;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.hit{animation:none}.judge.pop{animation:none;opacity:1}}
