@@ -57,9 +57,17 @@ main{flex:1}
 @media (min-width:820px){
   #side{display:grid;position:sticky;inset:auto;top:12px;width:250px;height:auto;max-height:calc(100vh - 24px);overflow:auto}
   #songBtn{display:none}
+  .collapsed #side:not(:popover-open){display:none}
+  .collapsed #songBtn{display:block}
 }
 @media (max-width:479px){.wide{display:none}}
-#lists button{flex:1;padding-inline:6px}
+.io #side,.io main>:not(#io){display:none!important}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:8px}
+.card h2{margin:0;font-size:16px}
+.link{background:none;border:0;padding:4px 10px;justify-self:start;color:var(--muted);font-size:13px;text-decoration:underline}
+.songs .grip{cursor:grab;touch-action:none}
+.songs li.drag{background:var(--surface);border-radius:8px;opacity:.85}
+#lists button{flex:1 1 auto;padding-inline:6px;white-space:nowrap}
 .songs{list-style:none;margin:0;padding:0;display:grid;gap:2px}
 .songs li{display:flex;align-items:center}
 .songs button{background:none;border-color:transparent;padding:8px 10px}
@@ -115,7 +123,7 @@ details>div{display:grid;gap:8px}
 <body>
 <header class="row">
   <h1>NMIXX<span class="wide"> 應援練習</span></h1>
-  <button id="exportBtn" style="margin-left:auto">匯出</button><button id="importOpen">匯入</button>
+  <button id="ioBtn" style="margin-left:auto">匯入／匯出</button>
   <div class="seg">
     <button id="tabPlay" class="on">練習</button><button id="tabMake">製作</button>
   </div>
@@ -123,15 +131,19 @@ details>div{display:grid;gap:8px}
 
 <div class="app">
 <aside id="side" popover>
-  <div id="lists" class="seg"><button data-l="全曲">全曲</button><button data-l="世巡歌單">世巡歌單</button><button data-l="安可歌單">安可歌單</button></div>
+  <div class="row" style="flex-wrap:nowrap">
+    <div id="lists" class="seg grow"><button data-l="全曲">全曲</button><button data-l="世巡歌單">世巡歌單</button><button data-l="安可歌單">安可歌單</button></div>
+    <button id="sideClose" aria-label="收合歌單" title="收合">«</button>
+  </div>
   <ol id="songList" class="songs"></ol>
   <p id="sideHint" class="muted"></p>
+  <button id="sortAlpha" class="link">改回依字母排序</button>
   <select id="listAdd" aria-label="加歌到這個歌單"></select>
 </aside>
 
 <main>
   <div class="row">
-    <button id="songBtn" popovertarget="side"></button>
+    <button id="songBtn"></button>
     <button id="addToggle">＋ 新增歌曲</button>
     <div id="speed" class="seg" aria-label="播放速度"><button data-r="1" class="on">1×</button><button data-r="0.75">0.75×</button><button data-r="0.5">0.5×</button></div>
   </div>
@@ -202,18 +214,24 @@ details>div{display:grid;gap:8px}
       </div>
     </details>
   </section>
+
+  <section id="io" hidden>
+    <div class="card">
+      <h2>匯出</h2>
+      <p class="muted">複製這台裝置上全部的歌、歌單和應援點，到另一台裝置的這一頁貼上匯入。Mac 和 iPhone 開了接力功能可以直接跨裝置貼上。</p>
+      <button id="exportBtn" class="on">複製全部資料</button>
+      <p id="exportMsg" class="muted"></p>
+    </div>
+    <div class="card">
+      <h2>匯入</h2>
+      <p class="muted">會取代這台裝置上目前的歌、歌單和應援點。</p>
+      <textarea id="importText" placeholder="把匯出的資料貼在這裡" aria-label="匯入資料"></textarea>
+      <button id="importBtn">匯入</button>
+      <p id="ioMsg" class="muted"></p>
+    </div>
+  </section>
 </main>
 </div>
-
-<dialog id="ioDlg">
-  <div class="dlg">
-    <h2 id="ioTitle"></h2>
-    <p>在一台裝置按右上角「匯出」，到另一台按「匯入」貼上。匯入會取代這台裝置上目前的歌、歌單和應援點。Mac 和 iPhone 開了接力功能可以直接跨裝置貼上。</p>
-    <textarea id="importText" placeholder="把匯出的資料貼在這裡" aria-label="匯入資料"></textarea>
-    <p id="ioMsg" class="muted"></p>
-    <div class="row"><button id="ioClose">關閉</button><button id="importBtn" class="on">匯入</button></div>
-  </div>
-</dialog>
 
 <dialog id="dlg">
   <div class="dlg">
@@ -242,6 +260,10 @@ const LISTS = ['世巡歌單', '安可歌單']; // 全曲 = every song, not stor
 db.lists ||= {};
 for (const l of LISTS) db.lists[l] ||= [];
 if (!['全曲', ...LISTS].includes(db.view)) db.view = '全曲';
+db.custom ||= Object.fromEntries(LISTS.map(l => [l, db.lists[l].length > 1])); // true = dragged into own order; keeps setlists arranged before sorting existed
+// ponytail: titles in Chinese characters sort before A–Z, not among them; add a pinyin initial table if that ever matters.
+const coll = new Intl.Collator('zh-u-co-pinyin', { numeric: true, sensitivity: 'base' });
+const wide = () => matchMedia('(min-width:820px)').matches;
 const move = (L, i, j) => { if (j >= 0 && j < L.length) [L[i], L[j]] = [L[j], L[i]]; return L; };
 const names = () => db.sets[db.set];
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {} };
@@ -471,32 +493,72 @@ function renderMake() {
 /* ---------- songs ---------- */
 function renderSongs() {
   const L = db.lists[db.view]; // undefined for 全曲
-  const shown = L ? L.map(id => db.songs.find(s => s.id === id)).filter(Boolean) : db.songs;
+  let shown = L ? L.map(id => db.songs.find(s => s.id === id)).filter(Boolean) : db.songs;
+  if (!db.custom[db.view]) shown = [...shown].sort((a, b) => coll.compare(a.title, b.title));
   $('lists').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.l === db.view));
   $('songList').replaceChildren(...shown.map((s, i) => {
     const li = document.createElement('li');
     li.dataset.id = s.id;
-    li.innerHTML = '<button class="pick"></button>' + (L ? '<button data-a="-1" aria-label="上移">↑</button><button data-a="1" aria-label="下移">↓</button><button data-a="rm" aria-label="移出歌單">✕</button>' : '');
-    li.firstChild.textContent = (L ? `${i + 1}. ` : '') + s.title;
-    li.firstChild.classList.toggle('cur', s.id === db.cur);
+    li.innerHTML = '<button class="grip" aria-label="拖曳排序（鍵盤用上下鍵）">⠿</button><button class="pick"></button>' + (L ? '<button data-a="rm" aria-label="移出歌單">✕</button>' : '');
+    const pick = li.querySelector('.pick');
+    pick.textContent = (L ? `${i + 1}. ` : '') + s.title;
+    pick.classList.toggle('cur', s.id === db.cur);
     return li;
   }));
+  $('sortAlpha').hidden = !db.custom[db.view] || shown.length < 2;
   const rest = L ? db.songs.filter(s => !L.includes(s.id)) : [];
   $('listAdd').replaceChildren(new Option(`＋ 加歌到${db.view}`, ''), ...rest.map(s => new Option(s.title, s.id)));
   $('listAdd').hidden = !rest.length;
-  $('sideHint').textContent = shown.length ? '' : db.songs.length ? '用下面的選單把歌加進來，↑↓ 可以調順序。' : '還沒有歌，按「＋ 新增歌曲」。';
+  $('sideHint').textContent = shown.length ? '' : db.songs.length ? '用下面的選單把歌加進來，拖 ⠿ 可以調順序。' : '還沒有歌，按「＋ 新增歌曲」。';
   $('songBtn').textContent = `☰ ${song()?.title || '歌單'}`;
   $('videoBox').hidden = !song();
   if (!db.songs.length) $('addForm').hidden = false;
 }
 $('lists').onclick = e => { const l = e.target.dataset.l; if (l) { db.view = l; save(); renderSongs(); } };
 $('songList').onclick = e => {
-  const b = e.target.closest('button'); if (!b) return;
-  const id = b.parentElement.dataset.id, L = db.lists[db.view];
-  if (!b.dataset.a) { $('side').hidePopover?.(); return selectSong(id); }
-  if (b.dataset.a === 'rm') L.splice(L.indexOf(id), 1); else move(L, L.indexOf(id), L.indexOf(id) + +b.dataset.a);
-  save(); renderSongs();
+  const b = e.target.closest('button'), id = b?.parentElement.dataset.id, L = db.lists[db.view];
+  if (b?.classList.contains('pick')) { $('side').hidePopover?.(); selectSong(id); }
+  if (b?.dataset.a === 'rm') { L.splice(L.indexOf(id), 1); save(); renderSongs(); }
 };
+function reorder(ids) {
+  if (db.lists[db.view]) db.lists[db.view] = ids;
+  else db.songs.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)); // 全曲 order = db.songs order
+  db.custom[db.view] = true; save(); renderSongs();
+}
+const domIds = () => [...$('songList').children].map(li => li.dataset.id);
+// ponytail: pointer events on a handle, so touch and mouse share one path; the list auto-scrolls only while the finger moves.
+$('songList').onpointerdown = e => {
+  const g = e.target.closest('.grip'); if (!g) return;
+  e.preventDefault();
+  const li = g.parentElement, ul = $('songList'), side = $('side');
+  let moved = false;
+  li.classList.add('drag');
+  // listen on window: moving the row in the DOM drops pointer capture, so the grip itself stops getting events
+  const ac = new AbortController(), on = (t, f) => addEventListener(t, f, { signal: ac.signal });
+  on('pointermove', ev => {
+    const r = side.getBoundingClientRect();
+    side.scrollTop += ev.clientY < r.top + 40 ? -12 : ev.clientY > r.bottom - 40 ? 12 : 0;
+    const over = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('#songList li');
+    if (!over || over === li) return;
+    ul.insertBefore(li, li.compareDocumentPosition(over) & Node.DOCUMENT_POSITION_FOLLOWING ? over.nextSibling : over);
+    moved = true;
+  });
+  const end = () => { ac.abort(); li.classList.remove('drag'); if (moved) reorder(domIds()); };
+  on('pointerup', end); on('pointercancel', end);
+};
+$('songList').onkeydown = e => {
+  const d = { ArrowUp: -1, ArrowDown: 1 }[e.key], id = e.target.closest('.grip')?.parentElement.dataset.id;
+  if (!d || !id) return;
+  e.preventDefault();
+  const ids = domIds(), i = ids.indexOf(id);
+  if (i + d < 0 || i + d >= ids.length) return;
+  reorder(move(ids, i, i + d));
+  $('songList').querySelector(`li[data-id="${CSS.escape(id)}"] .grip`).focus();
+};
+$('sortAlpha').onclick = () => { db.custom[db.view] = false; save(); renderSongs(); };
+const collapse = v => { db.collapsed = v; save(); document.body.classList.toggle('collapsed', v); };
+$('sideClose').onclick = () => wide() ? collapse(true) : $('side').hidePopover();
+$('songBtn').onclick = () => wide() ? collapse(false) : $('side').togglePopover();
 $('listAdd').onchange = e => { if (e.target.value) { db.lists[db.view].push(e.target.value); save(); renderSongs(); } };
 function selectSong(id) {
   db.cur = id; save(); undoStack = [];
@@ -557,16 +619,12 @@ $('delSong').onclick = async () => {
 };
 
 /* ---------- backup ---------- */
-const openIO = (title, msg) => { $('ioTitle').textContent = title; $('ioMsg').textContent = msg; $('ioDlg').showModal(); };
 $('exportBtn').onclick = () => {
-  const json = JSON.stringify(db), b = $('exportBtn');
+  const json = JSON.stringify(db);
   navigator.clipboard.writeText(json)
-    .then(() => { b.textContent = '已複製 ✓'; setTimeout(() => { b.textContent = '匯出'; }, 2000); })
-    .catch(() => { openIO('複製資料', '沒辦法自動複製，請手動全選複製框框裡的文字。'); $('importText').value = json; $('importText').select(); });
+    .then(() => { $('exportMsg').textContent = '已複製 ✓ 到另一台裝置的這一頁貼上匯入。'; })
+    .catch(() => { $('importText').value = json; $('importText').select(); $('exportMsg').textContent = '沒辦法自動複製，請手動全選複製下面框框裡的文字。'; });
 };
-$('importOpen').onclick = () => openIO('匯入資料', '');
-$('ioClose').onclick = () => $('ioDlg').close();
-$('ioDlg').onclick = e => { if (e.target === $('ioDlg')) $('ioDlg').close(); }; // tap outside
 $('importBtn').onclick = async () => {
   try {
     const d = JSON.parse($('importText').value);
@@ -580,22 +638,28 @@ $('importBtn').onclick = async () => {
     const sets = d.sets?.藝名?.length && d.sets?.本名?.length ? { 藝名: d.sets.藝名.map(String), 本名: d.sets.本名.map(String) } : db.sets;
     const ids = songs.map(s => s.id);
     const lists = Object.fromEntries(LISTS.map(l => [l, (d.lists?.[l] || []).map(String).filter(id => ids.includes(id))]));
-    db = { ...db, songs, sets, lists, cur: songs[0]?.id || null };
+    const custom = Object.fromEntries(['全曲', ...LISTS].map(l => [l, !!d.custom?.[l]]));
+    db = { ...db, songs, sets, lists, custom, cur: songs[0]?.id || null };
     save(); renderNames(); selectSong(db.cur);
     $('importText').value = ''; $('ioMsg').textContent = `匯入了 ${songs.length} 首歌 ✓`;
   } catch { $('ioMsg').textContent = '這段文字不是這個 app 匯出的資料。'; }
 };
 
 /* ---------- mode + keys ---------- */
+let lastMode = 'play';
 function setMode(m) {
+  if (mode !== 'io') lastMode = mode;
   mode = m;
-  $('play').hidden = m !== 'play'; $('make').hidden = m !== 'make';
-  $('tabPlay').classList.toggle('on', m === 'play'); $('tabMake').classList.toggle('on', m === 'make');
+  $('play').hidden = m !== 'play'; $('make').hidden = m !== 'make'; $('io').hidden = m !== 'io';
+  document.body.classList.toggle('io', m === 'io');
+  $('tabPlay').classList.toggle('on', m === 'play'); $('tabMake').classList.toggle('on', m === 'make'); $('ioBtn').classList.toggle('on', m === 'io');
   $('result').hidden = true;
-  m === 'play' ? buildNotes() : renderMake();
+  if (m === 'io') { if (ready) player.pauseVideo(); $('exportMsg').textContent = $('ioMsg').textContent = ''; }
+  else m === 'play' ? buildNotes() : renderMake();
 }
 $('tabPlay').onclick = () => setMode('play');
 $('tabMake').onclick = () => setMode('make');
+$('ioBtn').onclick = () => setMode(mode === 'io' ? lastMode : 'io');
 
 addEventListener('keydown', e => {
   if (e.target.matches?.('input,textarea,select') || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -606,6 +670,7 @@ addEventListener('keydown', e => {
 
 /* ---------- boot ---------- */
 $('offset').value = db.offset; $('offsetVal').textContent = db.offset;
+document.body.classList.toggle('collapsed', !!db.collapsed);
 setDiff(db.diff); renderNames(); renderSongs(); setMode('play');
 requestAnimationFrame(frame);
 
