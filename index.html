@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NMIXX 應援練習</title>
+<style>
+/* concert hall at night: ink stage, one pink lightstick accent. Single dark look on purpose. */
+:root{--bg:#13111c;--surface:#1f1b2c;--line:#332e47;--fg:#f2eff9;--muted:#9c95b5;--accent:#ff5fa8;--on-accent:#24081a;--perfect:#6fe3ff;--good:#ffd66b;--miss:#ff6b81;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);accent-color:var(--accent);font:15px/1.5 -apple-system,BlinkMacSystemFont,"PingFang TC","Apple SD Gothic Neo","Noto Sans TC","Noto Sans KR",sans-serif;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 48px max(16px,env(safe-area-inset-left))}
+main,section{max-width:720px;margin:0 auto;display:grid;gap:12px;width:100%}
+h1{font-size:17px;margin:0;letter-spacing:.02em}
+select,input,textarea,button{font:inherit;color:inherit}
+select,input,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+textarea{width:100%;min-height:90px;resize:vertical}
+select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:34px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%239c95b5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center/14px}
+/* Browsers that support it also get a styled option list; others keep their own menu (the iPhone picker wheel, the macOS menu). */
+@supports (appearance:base-select){
+  select,::picker(select){appearance:base-select}
+  select::picker-icon{display:none}
+  ::picker(select){background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:4px;margin-block:4px;box-shadow:0 12px 32px rgb(0 0 0 / .45)}
+  option{padding:10px 12px;border-radius:6px}
+  option:hover,option:focus-visible{background:var(--line)}
+  option:checked{color:var(--accent);font-weight:600}
+  option::checkmark{display:none}
+}
+dialog{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:14px;padding:0;width:min(360px,calc(100% - 32px));box-shadow:0 20px 50px rgb(0 0 0 / .5)}
+dialog[open]{animation:dlgIn .15s ease-out}
+@keyframes dlgIn{from{opacity:0;transform:translateY(8px)}}
+dialog::backdrop{background:rgb(8 6 14 / .65);backdrop-filter:blur(3px)}
+.dlg{padding:20px;display:grid;gap:8px}
+dialog h2{margin:0;font-size:17px}
+dialog p{margin:0 0 12px;color:var(--muted);line-height:1.6}
+dialog .row{justify-content:flex-end}
+.danger-fill{background:var(--miss);border-color:var(--miss);color:var(--on-accent);font-weight:600}
+button{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button:active{transform:scale(.97)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.danger{color:var(--miss)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+#song{flex:1 1 180px}
+.muted{color:var(--muted);font-size:13px;margin:0}
+.seg{display:flex}
+.seg button{border-radius:0}
+.seg button:first-child{border-radius:8px 0 0 8px}
+.seg button:last-child{border-radius:0 8px 8px 0}
+.video{aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;width:min(100%,71vh);margin-inline:auto}
+.video>*{width:100%;height:100%;display:block;border:0}
+.msg{color:var(--miss);font-size:13px;margin:0}
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+summary{cursor:pointer;color:var(--muted)}
+details[open] summary{margin-bottom:10px}
+details>div{display:grid;gap:8px}
+.hit{animation:hitflash .3s}
+@keyframes hitflash{from{background:var(--accent);color:var(--on-accent)}}
+
+/* practice */
+.pad{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;height:180px;overflow:hidden;-webkit-user-select:none;user-select:none}
+.lane{position:absolute;inset:0 0 auto 0;height:120px;border-bottom:1px solid var(--line)}
+.hitline{position:absolute;top:8px;bottom:8px;left:15%;width:3px;margin-left:-1.5px;background:var(--accent);border-radius:2px;box-shadow:0 0 12px var(--accent)}
+.note{position:absolute;left:0;top:0;padding:4px 10px;border-radius:999px;background:var(--fg);color:var(--bg);font-weight:700;white-space:nowrap;will-change:transform}
+.note.perfect{background:var(--perfect)}
+.note.good{background:var(--good)}
+.note.miss,.note.wrong{background:transparent;color:var(--miss);box-shadow:inset 0 0 0 1px var(--miss)}
+.judge{position:absolute;left:0;right:0;top:124px;text-align:center;font-weight:800;font-size:20px;line-height:1.25;letter-spacing:.06em;pointer-events:none}
+.judge small{display:block;font-size:16px;font-weight:600;color:var(--fg);letter-spacing:0}
+.judge.pop{animation:pop .6s ease-out forwards}
+@keyframes pop{from{transform:scale(1.2)}to{transform:scale(1);opacity:0}}
+.pbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.pbtns button{min-height:56px;font-size:17px;font-weight:700;padding:8px 6px}
+.pbtns:empty{display:none}
+.stats{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;text-align:right}
+.result{background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:14px;display:grid;gap:4px}
+.result b{font-size:28px;font-variant-numeric:tabular-nums}
+
+/* make */
+.names{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.names button,.words button{padding:12px 8px;font-size:16px;font-weight:600}
+.words{display:flex;flex-wrap:wrap;gap:8px}
+.words:empty{display:none}
+.cues{position:relative;list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:50vh;overflow:auto}
+.cues li{display:flex;gap:6px;align-items:center}
+.cues li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cues button{padding:4px 10px}
+.cues .t{font-variant-numeric:tabular-nums;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.hit{animation:none}.judge.pop{animation:none;opacity:1}}
+</style>
+</head>
+<body>
+<main>
+  <header class="row">
+    <h1>NMIXX 應援練習</h1>
+    <div class="seg" style="margin-left:auto">
+      <button id="tabPlay" class="on">練習</button><button id="tabMake">製作</button>
+    </div>
+  </header>
+
+  <div class="row">
+    <select id="song" class="grow" aria-label="歌曲"></select>
+    <button id="addToggle">＋ 新增歌曲</button>
+    <div id="speed" class="seg" aria-label="播放速度"><button data-r="1" class="on">1×</button><button data-r="0.75">0.75×</button><button data-r="0.5">0.5×</button></div>
+  </div>
+
+  <form id="addForm" class="row" hidden>
+    <input id="newTitle" class="grow" placeholder="歌名，例如 O.O" required>
+    <input id="newUrl" class="grow" placeholder="YouTube 網址（MV 或舞台）" required>
+    <button class="on">新增</button>
+  </form>
+  <p id="msg" class="msg" hidden></p>
+
+  <div id="videoBox" class="video"><div id="player"></div></div>
+
+  <section id="play">
+    <div class="row">
+      <div class="seg"><button id="easy">簡單</button><button id="hard">困難</button></div>
+      <button id="restart">從頭開始</button>
+      <span id="stats" class="stats grow"></span>
+    </div>
+    <div class="pad">
+      <div id="lane" class="lane"><div class="hitline"></div></div>
+      <div id="judge" class="judge"></div>
+    </div>
+    <div id="pbtns" class="pbtns"></div>
+    <p id="hint" class="muted"></p>
+    <div id="result" class="result" hidden></div>
+    <details>
+      <summary>判定時間微調</summary>
+      <div>
+        <input id="offset" type="range" min="-300" max="300" step="10" aria-label="判定時間微調">
+        <p class="muted">目前 <b id="offsetVal">0</b> ms。常出現「晚」就往右調，常出現「早」就往左調。戴藍牙耳機通常要往右。</p>
+      </div>
+    </details>
+  </section>
+
+  <section id="make" hidden>
+    <p class="muted">播放影片，聽到應援時按對應的按鈕，就會記下那個時間點。可以先調成 0.5× 比較好按。電腦上可以用 1–7 鍵代替名字按鈕。</p>
+    <div class="row">
+      <div class="seg"><button id="setStage">藝名</button><button id="setReal">本名</button></div>
+      <span class="muted grow">這段喊哪一組就切哪一組，同一首歌可以混用。</span>
+    </div>
+    <div id="names" class="names"></div>
+    <div id="words" class="words"></div>
+    <form id="wordForm" class="row">
+      <input id="wordInput" class="grow" placeholder="新增這首歌的其他應援詞" aria-label="新增應援詞" autocomplete="off">
+      <button class="on">新增</button>
+    </form>
+    <details id="wordsDelBox">
+      <summary>刪除應援詞</summary>
+      <div id="wordsDel" class="words"></div>
+    </details>
+    <details>
+      <summary>修改這組名字</summary>
+      <div>
+        <textarea id="namesEdit" placeholder="一行一個，照喊的順序" aria-label="點名名字"></textarea>
+        <p class="muted">每首歌共用，按鈕照這裡的順序排。</p>
+      </div>
+    </details>
+    <div class="row"><b class="grow">已記錄 <span id="cueCount">0</span> 個應援點</b><button id="undo">復原上一個</button></div>
+    <p class="muted">點時間可以跳回那裡重聽；− / ＋ 每次移 0.05 秒。</p>
+    <ul id="cues" class="cues"></ul>
+    <details>
+      <summary>歌曲設定</summary>
+      <div>
+        <input id="editTitle" placeholder="歌名" aria-label="歌名">
+        <input id="editUrl" placeholder="YouTube 網址" aria-label="YouTube 網址">
+        <div class="row"><button id="saveSong">儲存</button><button id="clearCues" class="danger">清空應援點</button><button id="delSong" class="danger">刪除這首歌</button></div>
+      </div>
+    </details>
+    <details>
+      <summary>備份／換裝置</summary>
+      <div>
+        <p class="muted">在這台裝置按「複製」，到另一台貼上後按「匯入」。Mac 和 iPhone 開了接力功能可以直接跨裝置貼上。</p>
+        <button id="exportBtn">複製全部資料</button>
+        <textarea id="importText" placeholder="把複製的資料貼在這裡" aria-label="匯入資料"></textarea>
+        <button id="importBtn">匯入（會取代這台裝置上的資料）</button>
+        <p id="ioMsg" class="muted"></p>
+      </div>
+    </details>
+  </section>
+</main>
+
+<dialog id="dlg">
+  <div class="dlg">
+    <h2 id="dlgTitle"></h2>
+    <p id="dlgBody"></p>
+    <div class="row"><button id="dlgCancel">取消</button><button id="dlgOk" class="danger-fill"></button></div>
+  </div>
+</dialog>
+
+<script>
+// ponytail: 本名 list is a best guess, editable in the app ("修改這組名字").
+const SETS = {
+  藝名: ['릴리!', '해원!', '설윤!', '배이!', '지우!', '규진!', '엔믹스!'],
+  本名: ['릴리!', '오해원!', '설윤아!', '배진솔!', '김지우!', '장규진!', '엔믹스!'],
+};
+const LEAD = 1.6, PERFECT = .08, GOOD = .16; // seconds
+const KEY = 'fanchant-v1';
+const $ = id => document.getElementById(id);
+
+let db = null;
+try { db = JSON.parse(localStorage.getItem(KEY)); } catch {}
+db ||= { songs: [], cur: null, offset: 0, diff: 'easy' };
+db.sets ||= structuredClone(SETS);
+db.set ||= '藝名';
+const names = () => db.sets[db.set];
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {} };
+const song = () => db.songs.find(s => s.id === db.cur);
+const vid = u => (u.trim().match(/(?:v=|youtu\.be\/|embed\/|shorts\/|live\/)([\w-]{11})/) || u.trim().match(/^([\w-]{11})$/) || [])[1];
+const grade = d => Math.abs(d) <= PERFECT ? 'perfect' : Math.abs(d) <= GOOD ? 'good' : null;
+const fmt = t => `${String(Math.floor(t / 60)).padStart(2, '0')}:${(t % 60).toFixed(2).padStart(5, '0')}`;
+const flash = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+const showMsg = t => { $('msg').textContent = t; $('msg').hidden = !t; };
+// pointerdown, not click: click waits for the finger to lift, which skews timing.
+const press = (b, fn) => { b.onpointerdown = e => { e.preventDefault(); fn(); }; b.onclick = e => { if (!e.detail) fn(); }; };
+let mode = 'play';
+
+/* ---------- YouTube + clock ---------- */
+let player, ready = false;
+window.onYouTubeIframeAPIReady = () => {
+  player = new YT.Player('player', {
+    ...(song() && { videoId: song().videoId }),
+    playerVars: { playsinline: 1, rel: 0 },
+    events: {
+      onReady() { ready = true; if (song()) player.cueVideoById(song().videoId); },
+      onStateChange(e) {
+        if (e.data === 1) { showMsg(''); $('result').hidden = true; player.setPlaybackRate(rate); }
+        if (e.data === 0) finish();
+      },
+      onError(e) { showMsg([101, 150].includes(e.data) ? '這支影片不允許嵌在別的網站播放，換一支試試（例如打歌節目官方頻道的舞台）。' : '影片載入失敗，檢查一下網址。'); },
+    },
+  });
+};
+
+// ponytail: getCurrentTime only refreshes a few times a second, so extrapolate between updates and ease toward each new reading.
+let raw = -1, est = 0, last = 0;
+function clock() {
+  const p = performance.now(), dt = (p - last) / 1000; last = p;
+  if (!ready) return 0;
+  const yt = player.getCurrentTime() || 0;
+  if (player.getPlayerState() !== 1) { raw = yt; return est = yt; }
+  est += dt * player.getPlaybackRate();
+  if (yt !== raw) { raw = yt; est = Math.abs(est - yt) > .25 ? yt : est + (yt - est) * .2; }
+  return est;
+}
+const playing = () => ready && player.getPlayerState() === 1;
+
+/* ---------- practice ---------- */
+const lane = $('lane');
+let notes = [], lastNow = 0, playBtns = [];
+
+// Only the chants this song uses: names in roll-call order first, then the rest in order of appearance.
+function chantList() {
+  const used = new Set((song()?.cues || []).map(c => c.text));
+  return [...new Set([...db.sets.藝名, ...db.sets.本名, ...used])].filter(w => used.has(w));
+}
+
+function buildNotes() {
+  lane.querySelectorAll('.note').forEach(e => e.remove());
+  notes = (song()?.cues || []).map((c, i) => ({ ...c, i, j: null, el: null }));
+  playBtns = chantList().map(t => {
+    const b = document.createElement('button');
+    b.textContent = t;
+    press(b, () => hit(t, b));
+    return b;
+  });
+  $('pbtns').replaceChildren(...playBtns);
+  $('hint').textContent = !song() ? '先在上面新增一首歌（歌名＋YouTube 網址）。' : notes.length
+    ? '應援詞碰到粉紅線時按對應的按鈕。電腦可以用數字鍵 1、2、3…'
+    : '這首還沒有應援點，先到「製作」記錄。';
+  updateStats();
+}
+
+function paint(n) {
+  if (!n.el) return;
+  n.el.className = 'note ' + (n.j || '');
+  n.el.textContent = db.diff === 'hard' && !n.j ? '?' : n.text;
+}
+
+function updateStats() {
+  const c = { perfect: 0, good: 0, miss: 0 };
+  notes.forEach(n => n.j && c[n.j === 'wrong' ? 'miss' : n.j]++);
+  $('stats').textContent = notes.length ? `Perfect ${c.perfect} · Good ${c.good} · Miss ${c.miss} / ${notes.length}` : '';
+  return c;
+}
+
+const LABEL = { perfect: 'PERFECT', miss: 'MISS', wrong: '按錯了' };
+function showJudge(n, d) {
+  const el = $('judge'), s = document.createElement('small');
+  el.textContent = n.j === 'good' ? `GOOD · ${d < 0 ? '早' : '晚'}` : LABEL[n.j];
+  el.style.color = `var(--${n.j === 'wrong' ? 'miss' : n.j})`;
+  s.textContent = n.text;
+  el.append(s);
+  flash(el, 'pop');
+}
+
+function hit(text, btn) {
+  if (btn) flash(btn, 'hit');
+  if (mode !== 'play' || !playing()) return;
+  const now = clock() - db.offset / 1000, dist = n => Math.abs(n.t - now);
+  const near = notes.filter(n => !n.j && grade(n.t - now)).sort((a, b) => dist(a) - dist(b));
+  const n = near.find(x => x.text === text) || near[0];
+  if (!n) return; // stray tap, no penalty
+  n.j = n.text === text ? grade(now - n.t) : 'wrong';
+  paint(n); showJudge(n, now - n.t); updateStats();
+}
+
+function frame() {
+  requestAnimationFrame(frame);
+  const now = clock() - db.offset / 1000;
+  if (mode !== 'play') return;
+  if (now < lastNow - .3) notes.forEach(n => { if (n.t > now - .05 && n.j) { n.j = null; paint(n); } }); // seeked back
+  lastNow = now;
+  const W = lane.clientWidth, x0 = W * .15, pps = (W - x0) / LEAD;
+  let changed = false;
+  for (const n of notes) {
+    if (!n.j && now > n.t + GOOD) { n.j = 'miss'; paint(n); showJudge(n, 0); changed = true; }
+    if (n.t < now - .6 || n.t > now + LEAD + .3) { if (n.el) { n.el.remove(); n.el = null; } continue; }
+    if (!n.el) { n.el = document.createElement('div'); lane.append(n.el); paint(n); }
+    n.el.style.transform = `translate(${x0 + (n.t - now) * pps}px,${n.i % 2 ? 82 : 38}px) translate(-50%,-50%)`;
+  }
+  if (changed) updateStats();
+}
+
+function finish() {
+  if (mode !== 'play' || !notes.length) return;
+  notes.forEach(n => { if (!n.j) { n.j = 'miss'; paint(n); } });
+  const c = updateStats(), acc = Math.round((c.perfect + c.good * .5) / notes.length * 100), s = song();
+  s.best ||= {};
+  const prev = s.best[db.diff] || 0;
+  if (acc > prev) { s.best[db.diff] = acc; save(); }
+  $('result').innerHTML = `<b>${acc}%</b><span>Perfect ${c.perfect} · Good ${c.good} · Miss ${c.miss}</span>
+    <span class="muted">${db.diff === 'hard' ? '困難' : '簡單'}最佳 ${Math.max(acc, prev)}%${acc > prev && prev ? '，新紀錄！' : ''}</span>`;
+  $('result').hidden = false;
+}
+
+$('restart').onclick = () => { if (!ready || !song()) return; $('result').hidden = true; buildNotes(); player.seekTo(0, true); player.playVideo(); };
+function setDiff(d) { db.diff = d; save(); $('easy').classList.toggle('on', d === 'easy'); $('hard').classList.toggle('on', d === 'hard'); notes.forEach(paint); }
+$('easy').onclick = () => setDiff('easy');
+$('hard').onclick = () => setDiff('hard');
+$('offset').oninput = e => { db.offset = +e.target.value; $('offsetVal').textContent = db.offset; save(); };
+
+/* ---------- make ---------- */
+let undoStack = [], nameBtns = [];
+
+function record(text) {
+  const s = song();
+  if (!s || !ready) return false;
+  const c = { t: Math.round(clock() * 100) / 100, text };
+  s.cues.push(c); s.cues.sort((x, y) => x.t - y.t); undoStack.push(c); save();
+  renderCues(c);
+  return true;
+}
+const recBtn = t => {
+  const b = document.createElement('button');
+  b.textContent = t;
+  press(b, () => { flash(b, 'hit'); record(t); });
+  return b;
+};
+
+function renderNames() {
+  $('setStage').classList.toggle('on', db.set === '藝名');
+  $('setReal').classList.toggle('on', db.set === '本名');
+  nameBtns = names().map((t, i) => Object.assign(recBtn(t), { title: `鍵盤 ${i + 1}` }));
+  $('names').replaceChildren(...nameBtns);
+  if (document.activeElement !== $('namesEdit')) $('namesEdit').value = names().join('\n');
+}
+const setSet = s => { db.set = s; save(); renderNames(); };
+$('setStage').onclick = () => setSet('藝名');
+$('setReal').onclick = () => setSet('本名');
+$('namesEdit').oninput = e => {
+  const v = e.target.value.split('\n').map(x => x.trim()).filter(Boolean);
+  if (v.length) { db.sets[db.set] = v; save(); renderNames(); }
+};
+
+function renderWords() {
+  const s = song(), ws = s?.words || [];
+  $('words').replaceChildren(...ws.map(recBtn));
+  $('wordsDel').replaceChildren(...ws.map(w => {
+    const b = document.createElement('button');
+    b.textContent = `${w} ✕`;
+    b.onclick = () => { s.words.splice(s.words.indexOf(w), 1); save(); renderWords(); };
+    return b;
+  }));
+  $('wordsDelBox').hidden = !ws.length;
+}
+$('wordForm').onsubmit = e => {
+  e.preventDefault();
+  const s = song(), w = $('wordInput').value.trim();
+  if (s && w && !s.words.includes(w)) { s.words.push(w); save(); renderWords(); }
+  $('wordInput').value = '';
+  $('wordInput').focus();
+};
+
+function renderCues(focus) {
+  const s = song(), ul = $('cues'), top = ul.scrollTop;
+  $('cueCount').textContent = s?.cues.length || 0;
+  ul.replaceChildren(...(s?.cues || []).map((c, i) => {
+    const li = document.createElement('li');
+    li.dataset.i = i;
+    li.innerHTML = '<button class="t" data-a="seek"></button><span></span><button data-a="-" aria-label="提早 0.05 秒">−</button><button data-a="+" aria-label="延後 0.05 秒">＋</button><button data-a="del" class="danger" aria-label="刪除">✕</button>';
+    li.querySelector('.t').textContent = fmt(c.t);
+    li.querySelector('span').textContent = c.text;
+    return li;
+  }));
+  ul.scrollTop = top;
+  const li = focus && ul.children[s.cues.indexOf(focus)];
+  if (li) ul.scrollTop = li.offsetTop - ul.clientHeight / 2;
+}
+$('cues').onclick = e => {
+  const a = e.target.closest('button')?.dataset.a; if (!a) return;
+  const s = song(), c = s.cues[+e.target.closest('li').dataset.i];
+  if (a === 'seek') { player.seekTo(Math.max(0, c.t - 2), true); player.playVideo(); return; }
+  if (a === 'del') s.cues.splice(s.cues.indexOf(c), 1);
+  else c.t = Math.max(0, Math.round((c.t + (a === '+' ? .05 : -.05)) * 100) / 100);
+  s.cues.sort((x, y) => x.t - y.t); save(); renderCues();
+};
+$('undo').onclick = () => {
+  const s = song(), c = undoStack.pop();
+  if (!s || !c || !s.cues.includes(c)) return;
+  s.cues.splice(s.cues.indexOf(c), 1); save(); renderCues();
+};
+
+function renderMake() {
+  const s = song();
+  $('editTitle').value = s?.title || '';
+  $('editUrl').value = s ? `https://youtu.be/${s.videoId}` : '';
+  renderWords(); renderCues();
+}
+
+/* ---------- songs ---------- */
+function renderSongs() {
+  const sel = $('song');
+  sel.replaceChildren(...db.songs.map(s => new Option(s.title, s.id)));
+  sel.value = db.cur || '';
+  sel.hidden = !db.songs.length;
+  $('videoBox').hidden = !song();
+  if (!db.songs.length) $('addForm').hidden = false;
+}
+function selectSong(id) {
+  db.cur = id; save(); undoStack = [];
+  if (ready && song()) player.cueVideoById(song().videoId);
+  $('result').hidden = true;
+  renderSongs(); buildNotes(); renderMake();
+}
+$('song').onchange = e => selectSong(e.target.value);
+let rate = 1;
+$('speed').onclick = e => {
+  const r = e.target.dataset.r; if (!r) return;
+  rate = +r;
+  $('speed').querySelectorAll('button').forEach(b => b.classList.toggle('on', b === e.target));
+  if (ready) player.setPlaybackRate(rate);
+};
+$('addToggle').onclick = () => { $('addForm').hidden = !$('addForm').hidden; };
+$('addForm').onsubmit = e => {
+  e.preventDefault();
+  const id = vid($('newUrl').value);
+  if (!id) return showMsg('看不懂這個網址，請貼 YouTube 影片的網址。');
+  const s = { id: Date.now().toString(36), title: $('newTitle').value.trim(), videoId: id, cues: [], words: [] };
+  db.songs.push(s); e.target.reset(); e.target.hidden = true; showMsg('');
+  selectSong(s.id); setMode('make');
+};
+$('saveSong').onclick = () => {
+  const s = song(); if (!s) return;
+  const id = vid($('editUrl').value);
+  if (!id) return showMsg('看不懂這個網址，請貼 YouTube 影片的網址。');
+  s.title = $('editTitle').value.trim() || s.title;
+  if (id !== s.videoId) { s.videoId = id; if (ready) player.cueVideoById(id); }
+  save(); renderSongs(); showMsg('');
+};
+// In-page replacement for confirm(): resolves true only when the red button is pressed.
+// Answers come straight from the buttons, not the dialog's async close event, so each answer reaches only its own question.
+let answer = null;
+const reply = v => { const r = answer; answer = null; if ($('dlg').open) $('dlg').close(); r?.(v); };
+const ask = (title, body, ok) => new Promise(res => {
+  reply(false);
+  $('dlgTitle').textContent = title; $('dlgBody').textContent = body; $('dlgOk').textContent = ok;
+  answer = res;
+  $('dlg').showModal();
+});
+$('dlgOk').onclick = () => reply(true);
+$('dlgCancel').onclick = () => reply(false);
+$('dlg').oncancel = e => { e.preventDefault(); reply(false); }; // Esc
+$('dlg').onclick = e => { if (e.target === $('dlg')) reply(false); }; // tap outside
+
+$('clearCues').onclick = async () => {
+  const s = song();
+  if (s && await ask(`清空「${s.title}」的應援點？`, `${s.cues.length} 個應援點會全部刪掉，沒辦法復原。`, '清空')) { s.cues = []; save(); renderCues(); }
+};
+$('delSong').onclick = async () => {
+  const s = song();
+  if (!s || !await ask(`刪除「${s.title}」？`, '這首歌和它的應援點會一起刪掉，沒辦法復原。', '刪除')) return;
+  if (!db.songs.includes(s)) return; // already gone; splice(-1) would delete another song
+  db.songs.splice(db.songs.indexOf(s), 1);
+  selectSong(db.songs[0]?.id || null);
+};
+
+/* ---------- backup ---------- */
+$('exportBtn').onclick = () => {
+  const json = JSON.stringify(db);
+  navigator.clipboard.writeText(json)
+    .then(() => { $('ioMsg').textContent = '已複製，到另一台裝置貼上匯入。'; })
+    .catch(() => { $('importText').value = json; $('importText').select(); $('ioMsg').textContent = '沒辦法自動複製，請手動複製上面框框裡的文字。'; });
+};
+$('importBtn').onclick = async () => {
+  try {
+    const d = JSON.parse($('importText').value);
+    const songs = d.songs.map(s => ({
+      id: String(s.id), title: String(s.title), videoId: String(s.videoId), best: s.best || {},
+      words: (s.words || []).map(String),
+      cues: (s.cues || []).map(c => ({ t: +c.t, text: String(c.text) }))
+        .filter(c => isFinite(c.t)).sort((a, b) => a.t - b.t),
+    }));
+    if (!await ask(`匯入 ${songs.length} 首歌？`, '這台裝置上目前的歌和應援點會被取代。', '匯入')) return;
+    const sets = d.sets?.藝名?.length && d.sets?.本名?.length ? { 藝名: d.sets.藝名.map(String), 本名: d.sets.本名.map(String) } : db.sets;
+    db = { ...db, songs, sets, cur: songs[0]?.id || null };
+    save(); renderNames(); selectSong(db.cur);
+    $('importText').value = ''; $('ioMsg').textContent = `匯入了 ${songs.length} 首歌。`;
+  } catch { $('ioMsg').textContent = '這段文字不是這個 app 複製出來的資料。'; }
+};
+
+/* ---------- mode + keys ---------- */
+function setMode(m) {
+  mode = m;
+  $('play').hidden = m !== 'play'; $('make').hidden = m !== 'make';
+  $('tabPlay').classList.toggle('on', m === 'play'); $('tabMake').classList.toggle('on', m === 'make');
+  $('result').hidden = true;
+  m === 'play' ? buildNotes() : renderMake();
+}
+$('tabPlay').onclick = () => setMode('play');
+$('tabMake').onclick = () => setMode('make');
+
+addEventListener('keydown', e => {
+  if (e.target.matches?.('input,textarea,select') || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key === '0' ? 10 : +e.key;
+  if (mode === 'play' && k >= 1 && k <= playBtns.length) hit(playBtns[k - 1].textContent, playBtns[k - 1]);
+  if (mode === 'make' && k >= 1 && k <= nameBtns.length) { flash(nameBtns[k - 1], 'hit'); record(names()[k - 1]); }
+});
+
+/* ---------- boot ---------- */
+$('offset').value = db.offset; $('offsetVal').textContent = db.offset;
+setDiff(db.diff); renderNames(); renderSongs(); setMode('play');
+requestAnimationFrame(frame);
+
+if (location.hash === '#selftest') {
+  console.assert(vid('https://www.youtube.com/watch?v=abcdefghijk&t=3') === 'abcdefghijk', 'watch url');
+  console.assert(vid('https://youtu.be/abcdefghijk?si=x') === 'abcdefghijk', 'short url');
+  console.assert(vid('https://youtube.com/shorts/abcdefghijk') === 'abcdefghijk', 'shorts url');
+  console.assert(vid('not a url') === undefined, 'bad url');
+  console.assert(grade(.05) === 'perfect' && grade(-.12) === 'good' && grade(.2) === null, 'grade');
+  console.log('selftest done');
+}
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
