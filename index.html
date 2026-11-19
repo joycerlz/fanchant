@@ -43,8 +43,29 @@ button:active{transform:scale(.97)}
 .danger{color:var(--miss)}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .grow{flex:1}
-#song{flex:1 1 180px}
+#songBtn{flex:1 1 180px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .muted{color:var(--muted);font-size:13px;margin:0}
+.muted:empty{display:none}
+
+/* layout: song list on the left on wide screens; on phones the same list slides in as a native popover */
+header{max-width:994px;margin:0 auto 12px}
+.app{display:flex;gap:24px;max-width:994px;margin:0 auto;align-items:flex-start}
+main{flex:1}
+#side{gap:10px;align-content:start;color:var(--fg);background:var(--bg);border:0;margin:0;padding:0}
+#side:popover-open{display:grid;inset:0 auto 0 0;width:min(300px,85vw);height:auto;padding:max(16px,env(safe-area-inset-top)) 16px 16px max(16px,env(safe-area-inset-left));border-right:1px solid var(--line)}
+#side::backdrop{background:rgb(8 6 14 / .65)}
+@media (min-width:820px){
+  #side{display:grid;position:sticky;inset:auto;top:12px;width:250px;height:auto;max-height:calc(100vh - 24px);overflow:auto}
+  #songBtn{display:none}
+}
+@media (max-width:479px){.wide{display:none}}
+#lists button{flex:1;padding-inline:6px}
+.songs{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.songs li{display:flex;align-items:center}
+.songs button{background:none;border-color:transparent;padding:8px 10px}
+.songs .pick{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.songs .cur{background:var(--surface);border-color:var(--line);color:var(--accent);font-weight:600}
+.songs li>button:not(.pick){color:var(--muted);padding:8px 7px}
 .seg{display:flex}
 .seg button{border-radius:0}
 .seg button:first-child{border-radius:8px 0 0 8px}
@@ -92,16 +113,25 @@ details>div{display:grid;gap:8px}
 </style>
 </head>
 <body>
-<main>
-  <header class="row">
-    <h1>NMIXX 應援練習</h1>
-    <div class="seg" style="margin-left:auto">
-      <button id="tabPlay" class="on">練習</button><button id="tabMake">製作</button>
-    </div>
-  </header>
+<header class="row">
+  <h1>NMIXX<span class="wide"> 應援練習</span></h1>
+  <button id="exportBtn" style="margin-left:auto">匯出</button><button id="importOpen">匯入</button>
+  <div class="seg">
+    <button id="tabPlay" class="on">練習</button><button id="tabMake">製作</button>
+  </div>
+</header>
 
+<div class="app">
+<aside id="side" popover>
+  <div id="lists" class="seg"><button data-l="全曲">全曲</button><button data-l="世巡歌單">世巡歌單</button><button data-l="安可歌單">安可歌單</button></div>
+  <ol id="songList" class="songs"></ol>
+  <p id="sideHint" class="muted"></p>
+  <select id="listAdd" aria-label="加歌到這個歌單"></select>
+</aside>
+
+<main>
   <div class="row">
-    <select id="song" class="grow" aria-label="歌曲"></select>
+    <button id="songBtn" popovertarget="side"></button>
     <button id="addToggle">＋ 新增歌曲</button>
     <div id="speed" class="seg" aria-label="播放速度"><button data-r="1" class="on">1×</button><button data-r="0.75">0.75×</button><button data-r="0.5">0.5×</button></div>
   </div>
@@ -171,18 +201,19 @@ details>div{display:grid;gap:8px}
         <div class="row"><button id="saveSong">儲存</button><button id="clearCues" class="danger">清空應援點</button><button id="delSong" class="danger">刪除這首歌</button></div>
       </div>
     </details>
-    <details>
-      <summary>備份／換裝置</summary>
-      <div>
-        <p class="muted">在這台裝置按「複製」，到另一台貼上後按「匯入」。Mac 和 iPhone 開了接力功能可以直接跨裝置貼上。</p>
-        <button id="exportBtn">複製全部資料</button>
-        <textarea id="importText" placeholder="把複製的資料貼在這裡" aria-label="匯入資料"></textarea>
-        <button id="importBtn">匯入（會取代這台裝置上的資料）</button>
-        <p id="ioMsg" class="muted"></p>
-      </div>
-    </details>
   </section>
 </main>
+</div>
+
+<dialog id="ioDlg">
+  <div class="dlg">
+    <h2 id="ioTitle"></h2>
+    <p>在一台裝置按右上角「匯出」，到另一台按「匯入」貼上。匯入會取代這台裝置上目前的歌、歌單和應援點。Mac 和 iPhone 開了接力功能可以直接跨裝置貼上。</p>
+    <textarea id="importText" placeholder="把匯出的資料貼在這裡" aria-label="匯入資料"></textarea>
+    <p id="ioMsg" class="muted"></p>
+    <div class="row"><button id="ioClose">關閉</button><button id="importBtn" class="on">匯入</button></div>
+  </div>
+</dialog>
 
 <dialog id="dlg">
   <div class="dlg">
@@ -207,6 +238,11 @@ try { db = JSON.parse(localStorage.getItem(KEY)); } catch {}
 db ||= { songs: [], cur: null, offset: 0, diff: 'easy' };
 db.sets ||= structuredClone(SETS);
 db.set ||= '藝名';
+const LISTS = ['世巡歌單', '安可歌單']; // 全曲 = every song, not stored
+db.lists ||= {};
+for (const l of LISTS) db.lists[l] ||= [];
+if (!['全曲', ...LISTS].includes(db.view)) db.view = '全曲';
+const move = (L, i, j) => { if (j >= 0 && j < L.length) [L[i], L[j]] = [L[j], L[i]]; return L; };
 const names = () => db.sets[db.set];
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {} };
 const song = () => db.songs.find(s => s.id === db.cur);
@@ -434,20 +470,40 @@ function renderMake() {
 
 /* ---------- songs ---------- */
 function renderSongs() {
-  const sel = $('song');
-  sel.replaceChildren(...db.songs.map(s => new Option(s.title, s.id)));
-  sel.value = db.cur || '';
-  sel.hidden = !db.songs.length;
+  const L = db.lists[db.view]; // undefined for 全曲
+  const shown = L ? L.map(id => db.songs.find(s => s.id === id)).filter(Boolean) : db.songs;
+  $('lists').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.l === db.view));
+  $('songList').replaceChildren(...shown.map((s, i) => {
+    const li = document.createElement('li');
+    li.dataset.id = s.id;
+    li.innerHTML = '<button class="pick"></button>' + (L ? '<button data-a="-1" aria-label="上移">↑</button><button data-a="1" aria-label="下移">↓</button><button data-a="rm" aria-label="移出歌單">✕</button>' : '');
+    li.firstChild.textContent = (L ? `${i + 1}. ` : '') + s.title;
+    li.firstChild.classList.toggle('cur', s.id === db.cur);
+    return li;
+  }));
+  const rest = L ? db.songs.filter(s => !L.includes(s.id)) : [];
+  $('listAdd').replaceChildren(new Option(`＋ 加歌到${db.view}`, ''), ...rest.map(s => new Option(s.title, s.id)));
+  $('listAdd').hidden = !rest.length;
+  $('sideHint').textContent = shown.length ? '' : db.songs.length ? '用下面的選單把歌加進來，↑↓ 可以調順序。' : '還沒有歌，按「＋ 新增歌曲」。';
+  $('songBtn').textContent = `☰ ${song()?.title || '歌單'}`;
   $('videoBox').hidden = !song();
   if (!db.songs.length) $('addForm').hidden = false;
 }
+$('lists').onclick = e => { const l = e.target.dataset.l; if (l) { db.view = l; save(); renderSongs(); } };
+$('songList').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const id = b.parentElement.dataset.id, L = db.lists[db.view];
+  if (!b.dataset.a) { $('side').hidePopover?.(); return selectSong(id); }
+  if (b.dataset.a === 'rm') L.splice(L.indexOf(id), 1); else move(L, L.indexOf(id), L.indexOf(id) + +b.dataset.a);
+  save(); renderSongs();
+};
+$('listAdd').onchange = e => { if (e.target.value) { db.lists[db.view].push(e.target.value); save(); renderSongs(); } };
 function selectSong(id) {
   db.cur = id; save(); undoStack = [];
   if (ready && song()) player.cueVideoById(song().videoId);
   $('result').hidden = true;
   renderSongs(); buildNotes(); renderMake();
 }
-$('song').onchange = e => selectSong(e.target.value);
 let rate = 1;
 $('speed').onclick = e => {
   const r = e.target.dataset.r; if (!r) return;
@@ -461,7 +517,7 @@ $('addForm').onsubmit = e => {
   const id = vid($('newUrl').value);
   if (!id) return showMsg('看不懂這個網址，請貼 YouTube 影片的網址。');
   const s = { id: Date.now().toString(36), title: $('newTitle').value.trim(), videoId: id, cues: [], words: [] };
-  db.songs.push(s); e.target.reset(); e.target.hidden = true; showMsg('');
+  db.songs.push(s); db.lists[db.view]?.push(s.id); e.target.reset(); e.target.hidden = true; showMsg('');
   selectSong(s.id); setMode('make');
 };
 $('saveSong').onclick = () => {
@@ -496,16 +552,21 @@ $('delSong').onclick = async () => {
   if (!s || !await ask(`刪除「${s.title}」？`, '這首歌和它的應援點會一起刪掉，沒辦法復原。', '刪除')) return;
   if (!db.songs.includes(s)) return; // already gone; splice(-1) would delete another song
   db.songs.splice(db.songs.indexOf(s), 1);
+  for (const l of LISTS) db.lists[l] = db.lists[l].filter(x => x !== s.id);
   selectSong(db.songs[0]?.id || null);
 };
 
 /* ---------- backup ---------- */
+const openIO = (title, msg) => { $('ioTitle').textContent = title; $('ioMsg').textContent = msg; $('ioDlg').showModal(); };
 $('exportBtn').onclick = () => {
-  const json = JSON.stringify(db);
+  const json = JSON.stringify(db), b = $('exportBtn');
   navigator.clipboard.writeText(json)
-    .then(() => { $('ioMsg').textContent = '已複製，到另一台裝置貼上匯入。'; })
-    .catch(() => { $('importText').value = json; $('importText').select(); $('ioMsg').textContent = '沒辦法自動複製，請手動複製上面框框裡的文字。'; });
+    .then(() => { b.textContent = '已複製 ✓'; setTimeout(() => { b.textContent = '匯出'; }, 2000); })
+    .catch(() => { openIO('複製資料', '沒辦法自動複製，請手動全選複製框框裡的文字。'); $('importText').value = json; $('importText').select(); });
 };
+$('importOpen').onclick = () => openIO('匯入資料', '');
+$('ioClose').onclick = () => $('ioDlg').close();
+$('ioDlg').onclick = e => { if (e.target === $('ioDlg')) $('ioDlg').close(); }; // tap outside
 $('importBtn').onclick = async () => {
   try {
     const d = JSON.parse($('importText').value);
@@ -517,10 +578,12 @@ $('importBtn').onclick = async () => {
     }));
     if (!await ask(`匯入 ${songs.length} 首歌？`, '這台裝置上目前的歌和應援點會被取代。', '匯入')) return;
     const sets = d.sets?.藝名?.length && d.sets?.本名?.length ? { 藝名: d.sets.藝名.map(String), 本名: d.sets.本名.map(String) } : db.sets;
-    db = { ...db, songs, sets, cur: songs[0]?.id || null };
+    const ids = songs.map(s => s.id);
+    const lists = Object.fromEntries(LISTS.map(l => [l, (d.lists?.[l] || []).map(String).filter(id => ids.includes(id))]));
+    db = { ...db, songs, sets, lists, cur: songs[0]?.id || null };
     save(); renderNames(); selectSong(db.cur);
-    $('importText').value = ''; $('ioMsg').textContent = `匯入了 ${songs.length} 首歌。`;
-  } catch { $('ioMsg').textContent = '這段文字不是這個 app 複製出來的資料。'; }
+    $('importText').value = ''; $('ioMsg').textContent = `匯入了 ${songs.length} 首歌 ✓`;
+  } catch { $('ioMsg').textContent = '這段文字不是這個 app 匯出的資料。'; }
 };
 
 /* ---------- mode + keys ---------- */
@@ -552,6 +615,7 @@ if (location.hash === '#selftest') {
   console.assert(vid('https://youtube.com/shorts/abcdefghijk') === 'abcdefghijk', 'shorts url');
   console.assert(vid('not a url') === undefined, 'bad url');
   console.assert(grade(.05) === 'perfect' && grade(-.12) === 'good' && grade(.2) === null, 'grade');
+  console.assert(move(['a', 'b', 'c'], 0, 1).join() === 'b,a,c' && move(['a', 'b'], 0, -1).join() === 'a,b', 'move');
   console.log('selftest done');
 }
 </script>
